@@ -1,0 +1,390 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+
+enum WatchStatus {
+  WATCHED
+  PLANNED
+  DROPPED
+}
+
+enum DiscussionType {
+  THEORY
+  SPOILER
+  ENDING_EXPLAINED
+  CHARACTER_ANALYSIS
+  GENERAL
+}
+
+enum MoodState {
+  HAPPY
+  SAD
+  EXCITED
+  TIRED
+  ADVENTUROUS
+  NOSTALGIC
+  FOCUSED
+  CHILL
+}
+
+enum GenreLevel {
+  NEWCOMER
+  EXPLORER
+  ENTHUSIAST
+  CONNOISSEUR
+  MASTER
+}
+
+enum MatchStatus {
+  PENDING
+  CALCULATED
+}
+
+// ─── MODELS ─────────────────────────────────────────────────────────────────
+
+model User {
+  id              String   @id @default(uuid())
+  name            String
+  username        String   @unique
+  email           String   @unique
+  emailVerified   DateTime?
+  passwordHash    String?
+  image           String?
+  bio             String?
+  reputationScore Int      @default(0)
+  integrityScore  Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  reviews         Review[]
+  discussions     Discussion[]
+  comments        Comment[]
+  votes           Vote[]
+  watchHistory    WatchHistory[]
+  tasteProfile    TasteProfile?
+  genreScores     UserGenreScore[]
+  cinemaPassport  CinemaPassport?
+  watchRoomsHosted WatchRoom[]    @relation("RoomHost")
+  watchRoomMemberships WatchRoomMember[]
+  roomReactions   RoomReaction[]
+  tasteMatchesA   TasteMatch[]   @relation("UserA")
+  tasteMatchesB   TasteMatch[]   @relation("UserB")
+  notifications   Notification[]
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Movie {
+  id           String   @id @default(uuid())
+  tmdbId       Int      @unique
+  title        String
+  tagline      String?
+  description  String?
+  posterPath   String?
+  backdropPath String?
+  releaseDate  DateTime?
+  runtime      Int?
+  genres       Json
+  cast         Json
+  directors    Json
+  language     String?
+  country      String?
+  ratingAvg    Float    @default(0)
+  reviewCount  Int      @default(0)
+  trendScore   Float    @default(0)
+  popularity   Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  filmDna      FilmDna?
+  reviews      Review[]
+  discussions  Discussion[]
+  watchHistory WatchHistory[]
+  watchRooms   WatchRoom[]
+  opinionTimeline OpinionTimeline[]
+}
+
+model FilmDna {
+  id              String  @id @default(uuid())
+  movieId         String  @unique
+  pacing          Float
+  tonalDensity    Float
+  emotionalArc    Float
+  visualStyle     Float
+  themeDepth      Float
+  embeddingVector Json
+  generatedAt     DateTime @default(now())
+  movie           Movie   @relation(fields: [movieId], references: [id])
+}
+
+model Review {
+  id                 String   @id @default(uuid())
+  userId             String
+  movieId            String
+  storyScore         Int
+  actingScore        Int
+  directionScore     Int
+  cinematographyScore Int
+  rewatchScore       Int
+  overallScore       Float
+  content            String?
+  containsSpoilers   Boolean  @default(false)
+  isBlindWatch       Boolean  @default(false)
+  helpfulVotes       Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  movie   Movie   @relation(fields: [movieId], references: [id])
+  votes   Vote[]
+
+  @@unique([userId, movieId])
+}
+
+model Discussion {
+  id             String         @id @default(uuid())
+  movieId        String
+  userId         String
+  title          String
+  content        String
+  type           DiscussionType
+  spoilerLevel   Int            @default(0)
+  sentimentScore Float          @default(0)
+  engagementScore Float         @default(0)
+  aiSummary      String?
+  isPinned       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  movie    Movie     @relation(fields: [movieId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  comments Comment[]
+  votes    Vote[]
+}
+
+model Comment {
+  id           String   @id @default(uuid())
+  discussionId String
+  userId       String
+  parentId     String?
+  content      String
+  spoilerLevel Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  discussion Discussion @relation(fields: [discussionId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  parent     Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[]  @relation("CommentReplies")
+  votes      Vote[]
+}
+
+model Vote {
+  id           String   @id @default(uuid())
+  userId       String
+  targetType   String
+  targetId     String
+  value        Int
+  createdAt    DateTime @default(now())
+
+  user         User       @relation(fields: [userId], references: [id])
+  review       Review?    @relation(fields: [targetId], references: [id])
+  discussion   Discussion? @relation(fields: [targetId], references: [id])
+  comment      Comment?   @relation(fields: [targetId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+}
+
+model WatchHistory {
+  id              String      @id @default(uuid())
+  userId          String
+  movieId         String
+  status          WatchStatus
+  isBlindWatch    Boolean     @default(false)
+  moodAtWatch     MoodState?
+  progressSeconds Int         @default(0)
+  durationSeconds Int         @default(0)
+  progressPercent Float       @default(0)
+  lastWatchedAt   DateTime    @default(now()) @updatedAt
+  completedAt     DateTime?
+  watchedAt       DateTime?
+  createdAt       DateTime    @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@unique([userId, movieId])
+}
+
+model TasteProfile {
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  preferredGenres  Json
+  likedActors      Json
+  likedDirectors   Json
+  dislikedGenres   Json
+  moodState        MoodState @default(CHILL)
+  embeddingVector  Json
+  genreScoreVector Json
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model UserGenreScore {
+  id              String     @id @default(uuid())
+  userId          String
+  genre           String
+  score           Float      @default(0)
+  level           GenreLevel @default(NEWCOMER)
+  watchCount      Int        @default(0)
+  avgRating       Float      @default(0)
+  reviewCount     Int        @default(0)
+  discussionCount Int        @default(0)
+  lastWatchedAt   DateTime?
+  updatedAt       DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, genre])
+  @@index([userId])
+  @@index([genre])
+}
+
+model TasteMatch {
+  id                 String      @id @default(uuid())
+  userAId            String
+  userBId            String
+  overallScore       Float
+  genreAlignScore    Float
+  ratingPatternScore Float
+  filmDnaScore       Float
+  discussionScore    Float
+  sharedTastes       Json
+  divergences        Json
+  status             MatchStatus @default(CALCULATED)
+  calculatedAt       DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  userA User @relation("UserA", fields: [userAId], references: [id])
+  userB User @relation("UserB", fields: [userBId], references: [id])
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+  @@index([overallScore])
+}
+
+model CinemaPassport {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  countriesWatched Json
+  languagesWatched Json
+  decadesCovered   Json
+  movementsExplored Json
+  passportScore    Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model WatchRoom {
+  id          String   @id @default(uuid())
+  hostUserId  String
+  movieId     String
+  name        String
+  isActive    Boolean  @default(true)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  host      User             @relation("RoomHost", fields: [hostUserId], references: [id])
+  movie     Movie            @relation(fields: [movieId], references: [id])
+  members   WatchRoomMember[]
+  reactions RoomReaction[]
+}
+
+model WatchRoomMember {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  room WatchRoom @relation(fields: [roomId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
+}
+
+model RoomReaction {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  emoji     String
+  timestamp Int
+  createdAt DateTime @default(now())
+
+  room WatchRoom @relation(fields: [roomId], references: [id])
+  user User      @relation(fields: [userId], references: [id])
+}
+
+model OpinionTimeline {
+  id          String   @id @default(uuid())
+  movieId     String
+  year        Int
+  avgRating   Float
+  reviewCount Int
+  sentiment   Float
+  createdAt   DateTime @default(now())
+
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@unique([movieId, year])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, isRead])
+}
