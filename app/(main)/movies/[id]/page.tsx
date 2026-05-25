@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -8,6 +9,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getWatchProgress } from "@/actions/watchProgress";
+
+interface MovieDetailPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: MovieDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const movie = await getMovieById(id);
+  if (!movie) return { title: "Movie not found" };
+  return {
+    title: movie.title,
+    description: movie.tagline ?? movie.description ?? `${movie.title} — TaleDen movie page.`,
+    openGraph: movie.posterPath ? { images: [`https://image.tmdb.org/t/p/w500${movie.posterPath}`] } : undefined,
+  };
+}
 
 export default async function MovieDetailPage({
   params,

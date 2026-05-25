@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { getDistinctGenres, getMoviesList } from "@/lib/movies/queries";
@@ -11,6 +12,17 @@ interface MoviesPageProps {
     genre?: string;
     page?: string;
   }>;
+}
+
+export async function generateMetadata({ searchParams }: MoviesPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const query = params.q;
+  return {
+    title: query ? `Search: "${query}"` : "Movies",
+    description: query
+      ? `Browse movies matching "${query}" in the TaleDen catalog.`
+      : "Browse, search, and filter the TaleDen movie catalog.",
+  };
 }
 
 export default async function MoviesPage({ searchParams }: MoviesPageProps) {

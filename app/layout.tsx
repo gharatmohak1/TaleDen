@@ -15,9 +15,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TaleDen — Movie intelligence & community",
-  description:
-    "Data-driven movie intelligence: taste graphs, Film DNA, mood recommendations, and more.",
+  title: { template: "%s — TaleDen", default: "TaleDen — Movie intelligence & community" },
+  description: "Data-driven movie intelligence: taste graphs, Film DNA, mood recommendations, and more.",
+  metadataBase: new URL("https://taleden.vercel.app"),
+  openGraph: {
+    type: "website",
+    siteName: "TaleDen",
+    title: "TaleDen — Movie intelligence & community",
+    description: "Data-driven movie intelligence: taste graphs, Film DNA, mood recommendations, and more.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TaleDen — Movie intelligence & community",
+    description: "Data-driven movie intelligence: taste graphs, Film DNA, mood recommendations, and more.",
+  },
 };
 
 export default function RootLayout({

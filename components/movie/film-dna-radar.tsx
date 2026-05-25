@@ -22,26 +22,36 @@ export function FilmDnaRadar({ filmDna }: FilmDnaRadarProps) {
   }));
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-[0_1px_8px_hsl(var(--foreground)/0.05)]">
-      <div className="h-[280px] w-full max-w-md mx-auto">
+    <div className="flex w-full max-w-sm shrink-0 items-center justify-center rounded-xl border border-border/60 bg-gradient-to-b from-primary/[0.02] to-transparent p-1">
+      <div className="h-[270px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="75%">
-            <PolarGrid className="stroke-border" />
+          <RadarChart data={chartData} cx="50%" cy="50%" outerRadius="72%" startAngle={90} endAngle={-270}>
+            <PolarGrid
+              className="stroke-border/50"
+              gridType="polygon"
+              strokeDasharray="3 3"
+            />
             <PolarAngleAxis
               dataKey="axis"
-              tick={{ fill: "var(--foreground)", fontSize: 11 }}
+              tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 500 }}
+              tickLine={false}
             />
             <PolarRadiusAxis
-              angle={90}
+              angle={30}
               domain={[0, 10]}
-              tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
+              tick={false}
+              axisLine={false}
             />
             <Radar
               name="Film DNA"
               dataKey="value"
               stroke="hsl(187 100% 42%)"
               fill="hsl(187 100% 42%)"
-              fillOpacity={0.25}
+              fillOpacity={0.2}
+              strokeWidth={2}
+              animationBegin={100}
+              animationDuration={800}
+              animationEasing="ease-out"
             />
           </RadarChart>
         </ResponsiveContainer>

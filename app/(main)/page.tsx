@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
@@ -10,6 +11,13 @@ import { getRecommendations } from "@/lib/recommendation";
 import { MoodState } from "@prisma/client";
 import { Sparkles, TrendingUp, Dna } from "lucide-react";
 import { TMDB_IMAGE_BASE } from "@/lib/tmdb";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Home",
+    description: "Discover movies tailored to your taste with TaleDen's AI-powered recommendations.",
+  };
+}
 
 export default async function HomePage() {
   const session = await auth();
