@@ -33,7 +33,7 @@ export function FilmDnaRadar({ filmDna }: FilmDnaRadarProps) {
             />
             <PolarAngleAxis
               dataKey="axis"
-              tick={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 500 }}
+              tick={{ fill: "hsl(187 100% 42%)", fontSize: 11, fontWeight: 600 }}
               tickLine={false}
             />
             <PolarRadiusAxis

@@ -140,35 +140,38 @@ function deterministicDna(movie: { description: string | null; genres: unknown; 
     if (scores[axis].length === 0) scores[axis].push(5);
   }
 
+  // Base averages from genres
+  const base = {} as Record<string, number>;
+  for (const axis of Object.keys(scores) as (keyof typeof scores)[]) {
+    base[axis] = scores[axis].reduce((a, b) => a + b, 0) / scores[axis].length;
+  }
+
   const desc = (movie.description ?? "").toLowerCase();
 
-  // Description keyword adjustments
+  // Keyword deltas applied as additive adjustments (not re-averaged)
   for (const [word, effects] of Object.entries(DESC_KEYWORDS)) {
     if (desc.includes(word)) {
       for (const { axis, delta } of effects) {
-        scores[axis as keyof typeof scores].push(
-          (scores[axis as keyof typeof scores].reduce((a, b) => a + b, 0) / scores[axis as keyof typeof scores].length) + delta,
-        );
+        base[axis as keyof typeof base]! += delta;
       }
     }
   }
 
-  // Runtime heuristic for pacing
+  // Runtime heuristic — averaged as an independent signal
   if (movie.runtime) {
-    if (movie.runtime < 90) scores.pacing.push(7);
-    else if (movie.runtime > 150) scores.pacing.push(3.5);
-    else scores.pacing.push(5.5);
+    const runtimePace = movie.runtime < 90 ? 7 : movie.runtime > 150 ? 3.5 : 5.5;
+    base.pacing = (base.pacing! + runtimePace) / 2;
   }
 
-  // Average and clamp
-  const avg = (arr: number[]) => Math.max(0.5, Math.min(9.5, arr.reduce((a, b) => a + b, 0) / arr.length));
+  // Clamp
+  const clamp = (v: number) => Math.max(0.5, Math.min(9.5, v));
 
   return {
-    pacing: Math.round(avg(scores.pacing) * 10) / 10,
-    tonalDensity: Math.round(avg(scores.tonalDensity) * 10) / 10,
-    emotionalArc: Math.round(avg(scores.emotionalArc) * 10) / 10,
-    visualStyle: Math.round(avg(scores.visualStyle) * 10) / 10,
-    themeDepth: Math.round(avg(scores.themeDepth) * 10) / 10,
+    pacing: Math.round(clamp(base.pacing!) * 10) / 10,
+    tonalDensity: Math.round(clamp(base.tonalDensity!) * 10) / 10,
+    emotionalArc: Math.round(clamp(base.emotionalArc!) * 10) / 10,
+    visualStyle: Math.round(clamp(base.visualStyle!) * 10) / 10,
+    themeDepth: Math.round(clamp(base.themeDepth!) * 10) / 10,
   };
 }
 

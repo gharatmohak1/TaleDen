@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { updatePassport } from "@/actions/passport";
 
 const SaveProgressSchema = z.object({
   movieId: z.string().uuid(),
@@ -27,27 +28,43 @@ export async function saveWatchProgress(input: unknown) {
 
   const isCompleted = progressPercent >= 90;
 
-  await prisma.watchHistory.upsert({
-    where: { userId_movieId: { userId, movieId } },
-    create: {
-      userId,
-      movieId,
-      status: "WATCHED",
-      progressSeconds,
-      durationSeconds,
-      progressPercent,
-      completedAt: isCompleted ? new Date() : null,
-    },
-    update: {
-      progressSeconds,
-      durationSeconds,
-      progressPercent,
-      status: "WATCHED",
-      completedAt: isCompleted ? new Date() : null,
-    },
+  const { isNewlyWatched } = await prisma.$transaction(async (tx) => {
+    const existing = await tx.watchHistory.findUnique({
+      where: { userId_movieId: { userId, movieId } },
+      select: { status: true },
+    });
+
+    const isNewlyWatched = existing?.status !== "WATCHED";
+
+    await tx.watchHistory.upsert({
+      where: { userId_movieId: { userId, movieId } },
+      create: {
+        userId,
+        movieId,
+        status: "WATCHED",
+        progressSeconds,
+        durationSeconds,
+        progressPercent,
+        completedAt: isCompleted ? new Date() : null,
+      },
+      update: {
+        progressSeconds,
+        durationSeconds,
+        progressPercent,
+        status: "WATCHED",
+        completedAt: isCompleted ? new Date() : null,
+      },
+    });
+
+    return { isNewlyWatched };
   });
 
+  if (isNewlyWatched) {
+    await updatePassport(userId, movieId);
+  }
+
   revalidatePath(`/movies/${movieId}`);
+  revalidatePath("/passport");
 
   return { success: true, progressPercent };
 }
