@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Users, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, ArrowRight, ShieldCheck, Bookmark } from "lucide-react";
 import { auth } from "@/auth";
 import { getProfileByUsername } from "@/lib/profile/queries";
 import { GenreScoresSection } from "@/components/profile/genre-scores-section";
@@ -14,6 +14,7 @@ import { getRecommendations } from "@/lib/recommendation";
 import { TasteMatchCard } from "@/components/profile/taste-match-card";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
+import { TMDB_IMAGE_BASE } from "@/lib/tmdb";
 
 export default async function ProfilePage({
   params,
@@ -48,6 +49,19 @@ export default async function ProfilePage({
 
   // Fetch personalized recommendations if owner is viewing
   const recommendations = isOwner ? await getRecommendations(profile.id, 3) : [];
+
+  // Fetch watchlist (planned movies)
+  const watchlist = isOwner
+    ? await prisma.watchHistory.findMany({
+        where: {
+          userId: profile.id,
+          status: "PLANNED",
+        },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        include: { movie: { select: { id: true, title: true, posterPath: true } } },
+      })
+    : [];
 
   // Helper to format integrity score label
   const getIntegrityLabel = (score: number) => {
@@ -126,6 +140,56 @@ export default async function ProfilePage({
           
           {isOwner && recommendations.length > 0 && (
             <ProfileRecs recommendations={recommendations} />
+          )}
+
+          {watchlist.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <Bookmark className="h-4 w-4 text-primary" />
+                <h2 className="text-base md:text-lg font-semibold">Watchlist</h2>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {watchlist.length} planned
+                </span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
+                {watchlist.map((entry) => {
+                  const posterUrl = entry.movie.posterPath
+                    ? `${TMDB_IMAGE_BASE}${entry.movie.posterPath}`
+                    : null;
+                  return (
+                    <Link
+                      key={entry.movie.id}
+                      href={`/movies/${entry.movie.id}`}
+                      className="shrink-0 w-32 md:w-36 group"
+                    >
+                      <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-muted shadow-[0_1px_8px_hsl(var(--foreground)/0.05)]">
+                        {posterUrl ? (
+                          <Image
+                            src={posterUrl}
+                            fill
+                            sizes="144px"
+                            alt={entry.movie.title}
+                            className="object-cover transition-all duration-300 group-hover:scale-[1.05]"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                            No poster
+                          </div>
+                        )}
+                        <div className="absolute top-2 left-2">
+                          <span className="inline-flex items-center rounded-full border border-border/50 bg-background/80 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                            Planned
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-1.5 text-xs font-medium truncate">
+                        {entry.movie.title}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
           )}
 
           <ProfileReviews reviews={recentReviews} />
