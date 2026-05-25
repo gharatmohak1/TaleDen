@@ -88,7 +88,7 @@ export async function joinWatchRoom(roomId: string) {
       });
     }
 
-
+    revalidatePath(`/watch-rooms/${roomId}`);
     return { success: true };
   } catch (err) {
     console.error("[joinWatchRoom] Error:", err);
@@ -170,6 +170,7 @@ export async function saveRoomReaction(
         timestamp,
       },
     });
+    revalidatePath(`/watch-rooms/${roomId}`);
     return { success: true, reactionId: reaction.id };
   } catch (err) {
     console.error("[saveRoomReaction] Error:", err);

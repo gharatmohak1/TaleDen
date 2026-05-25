@@ -2,6 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 
 const registerSchema = z.object({
@@ -71,5 +72,6 @@ export async function registerUser(
     },
   });
 
+  revalidatePath("/login");
   return { success: true };
 }

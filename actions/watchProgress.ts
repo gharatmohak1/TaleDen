@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const SaveProgressSchema = z.object({
@@ -45,6 +46,8 @@ export async function saveWatchProgress(input: unknown) {
       completedAt: isCompleted ? new Date() : null,
     },
   });
+
+  revalidatePath(`/movies/${movieId}`);
 
   return { success: true, progressPercent };
 }
@@ -101,5 +104,6 @@ export async function resetWatchProgress(movieId: string) {
     });
   }
 
+  revalidatePath(`/movies/${movieId}`);
   return { success: true };
 }

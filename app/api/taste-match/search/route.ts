@@ -19,33 +19,37 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const q = req.nextUrl.searchParams.get("q")?.trim();
-  if (!q || q.length < 2) {
-    return NextResponse.json({ users: [] });
+  try {
+    const q = req.nextUrl.searchParams.get("q")?.trim();
+    if (!q || q.length < 2) {
+      return NextResponse.json({ users: [] });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        AND: [
+          { id: { not: auth.session.user.id } },
+          {
+            OR: [
+              { username: { contains: q } },
+              { name: { contains: q } },
+            ],
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        image: true,
+        reputationScore: true,
+      },
+      take: 10,
+      orderBy: { reputationScore: "desc" },
+    });
+
+    return NextResponse.json({ users });
+  } catch {
+    return NextResponse.json({ error: "Search failed" }, { status: 500 });
   }
-
-  const users = await prisma.user.findMany({
-    where: {
-      AND: [
-        { id: { not: auth.session.user.id } },
-        {
-          OR: [
-            { username: { contains: q } },
-            { name: { contains: q } },
-          ],
-        },
-      ],
-    },
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      image: true,
-      reputationScore: true,
-    },
-    take: 10,
-    orderBy: { reputationScore: "desc" },
-  });
-
-  return NextResponse.json({ users });
 }

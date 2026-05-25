@@ -28,7 +28,7 @@ export default async function MovieDetailPage({
     : null;
 
   const userReview = session?.user?.id
-    ? (movie.reviews.find((r) => r.userId === session.user!.id) ?? null)
+    ? (movie.reviews?.find((r) => r.userId === session.user!.id) ?? null)
     : null;
 
   const isBlindWatchActive = !!(watchEntry?.isBlindWatch && !userReview);

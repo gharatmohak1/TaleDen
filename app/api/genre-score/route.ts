@@ -36,19 +36,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  let userId = parsed.data.userId ?? auth.session.user.id;
+  try {
+    let userId = parsed.data.userId ?? auth.session.user.id;
 
-  if (parsed.data.username) {
-    const user = await prisma.user.findUnique({
-      where: { username: parsed.data.username.toLowerCase() },
-      select: { id: true },
-    });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (parsed.data.username) {
+      const user = await prisma.user.findUnique({
+        where: { username: parsed.data.username.toLowerCase() },
+        select: { id: true },
+      });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+      userId = user.id;
     }
-    userId = user.id;
-  }
 
-  const scores = await getGenreScoresForUser(userId);
-  return NextResponse.json({ scores });
+    const scores = await getGenreScoresForUser(userId);
+    return NextResponse.json({ scores });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch genre scores" }, { status: 500 });
+  }
 }

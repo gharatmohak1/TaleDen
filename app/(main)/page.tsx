@@ -76,7 +76,7 @@ export default async function HomePage() {
           {
             icon: Dna,
             title: "Film DNA",
-            desc: "Five-axis fingerprints scored by Claude for every title.",
+            desc: "Five-axis fingerprints scored by TaleDen AI for every title.",
           },
           {
             icon: Sparkles,

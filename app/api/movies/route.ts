@@ -42,6 +42,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const result = await getMoviesList(parsed.data);
-  return NextResponse.json(result);
+  try {
+    const result = await getMoviesList(parsed.data);
+    return NextResponse.json(result);
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch movies" }, { status: 500 });
+  }
 }

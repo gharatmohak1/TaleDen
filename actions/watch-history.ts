@@ -69,10 +69,7 @@ export async function setWatchStatus(
 
   if (parsedStatus === WatchStatus.WATCHED) {
     triggerGenreScoresForMovie(session.user.id, movieId, "watch");
-    // Wire updatePassport asynchronously
-    void updatePassport(session.user.id, movieId).catch((err) => {
-      console.error("[watch-history] Passport update failed:", err);
-    });
+    await updatePassport(session.user.id, movieId);
   }
 
   const user = await prisma.user.findUnique({
@@ -82,6 +79,7 @@ export async function setWatchStatus(
 
   revalidatePath(`/movies/${movieId}`);
   revalidatePath("/movies");
+  revalidatePath("/passport");
   if (user?.username) revalidatePath(`/profile/${user.username}`);
 
   return { success: true };

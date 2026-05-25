@@ -33,10 +33,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  const recommendations = await getRecommendations(
-    auth.session.user.id,
-    parsed.data.limit
-  );
+  try {
+    const recommendations = await getRecommendations(
+      auth.session.user.id,
+      parsed.data.limit
+    );
 
-  return NextResponse.json({ recommendations });
+    return NextResponse.json({ recommendations });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch recommendations" }, { status: 500 });
+  }
 }
