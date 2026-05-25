@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useWatchRoom } from "@/hooks/useWatchRoom";
 import { saveRoomReaction } from "@/actions/watch-rooms";
-import { Button } from "@/components/ui/button";
-import { Heart, Play, Pause, RotateCcw, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Heart } from "lucide-react";
 
 interface ReactionFeedProps {
   roomId: string;
@@ -22,7 +20,7 @@ interface ReactionFeedProps {
       image: string | null;
     };
   }>;
-  movieRuntime: number; // in minutes
+  currentTime: number;
 }
 
 const COMMON_EMOJIS = [
@@ -42,7 +40,7 @@ export function ReactionFeed({
   userName,
   userImage,
   initialReactions,
-  movieRuntime,
+  currentTime,
 }: ReactionFeedProps) {
   const { reactions, setReactions, sendReaction } = useWatchRoom(
     roomId,
@@ -52,10 +50,6 @@ export function ReactionFeed({
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Playback state simulation
-  const [playTime, setPlayTime] = useState(0); // in seconds
-  const [isPlaying, setIsPlaying] = useState(true);
 
   // Load initial reactions from database
   useEffect(() => {
@@ -70,24 +64,6 @@ export function ReactionFeed({
     setReactions(formatted);
   }, [initialReactions, setReactions]);
 
-  // Elapsed timer simulation
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const interval = setInterval(() => {
-      setPlayTime((prev) => {
-        const next = prev + 1;
-        if (next >= movieRuntime * 60) {
-          setIsPlaying(false);
-          return movieRuntime * 60;
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, movieRuntime]);
-
   // Auto scroll feed to bottom on new reactions
   useEffect(() => {
     if (containerRef.current) {
@@ -96,11 +72,8 @@ export function ReactionFeed({
   }, [reactions]);
 
   const handleEmojiClick = async (emoji: string) => {
-    // 1. Send via WebSocket (live reaction)
-    sendReaction(emoji, playTime);
-
-    // 2. Persist in database
-    await saveRoomReaction(roomId, emoji, playTime);
+    sendReaction(emoji, Math.floor(currentTime));
+    await saveRoomReaction(roomId, emoji, Math.floor(currentTime));
   };
 
   // Format seconds to hh:mm:ss
@@ -115,96 +88,30 @@ export function ReactionFeed({
     ].filter(Boolean).join(":");
   };
 
-  const progressPercent = (playTime / (movieRuntime * 60)) * 100;
-
   return (
-    <div className="grid gap-6 md:grid-cols-3">
-      {/* Visual Simulation Screen & Timer */}
-      <div className="md:col-span-2 space-y-4">
-        <div className="aspect-video bg-zinc-950 rounded-2xl flex flex-col justify-between p-6 border border-border/10 shadow-2xl relative group overflow-hidden">
-          {/* Movie backdrop decoration */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 z-0" />
-          
-          <div className="flex justify-between items-center z-10">
-            <Badge className="bg-primary/20 hover:bg-primary/20 text-primary border-primary/20 gap-1.5 backdrop-blur-md">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live Watch Session
-            </Badge>
-            <div className="flex items-center gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-md backdrop-blur-md">
-              <Clock className="h-3.5 w-3.5" />
-              <span>Runtime: {movieRuntime}m</span>
-            </div>
-          </div>
-
-          {/* Central Play/Pause Status Indicator */}
-          <div className="flex-1 flex items-center justify-center z-10">
-            <div className="text-center space-y-2">
-              <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">Cinema Timeline</p>
-              <p className="text-5xl font-black tracking-tight text-white font-mono tabular-nums">
-                {formatTime(playTime)}
-              </p>
-            </div>
-          </div>
-
-          {/* Control Bar & Progress */}
-          <div className="space-y-4 z-10">
-            {/* Timeline progress slider */}
-            <div className="space-y-1.5">
-              <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden relative cursor-pointer">
-                <div
-                  className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] font-mono text-zinc-500">
-                <span>00:00</span>
-                <span>{formatTime(movieRuntime * 60)}</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="h-8 w-8 rounded-full border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-white"
-                >
-                  {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setPlayTime(0)}
-                  className="h-8 w-8 rounded-full border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-white"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
-              {/* Live emoji picker */}
-              <div className="flex items-center gap-1 bg-zinc-900/60 p-1 rounded-full border border-zinc-800/80 backdrop-blur-md overflow-x-auto max-w-full no-scrollbar sm:gap-1.5 sm:p-1.5">
-                {COMMON_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji.label}
-                    type="button"
-                    onClick={() => handleEmojiClick(emoji.char)}
-                    className="h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center text-base sm:text-lg hover:scale-125 hover:rotate-3 transition-transform focus:outline-none shrink-0"
-                    title={`React with ${emoji.label}`}
-                  >
-                    {emoji.char}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Emoji picker + reaction feed */}
+      <div className="flex flex-col gap-4 flex-1 min-w-0">
+        {/* Live emoji picker */}
+        <div className="flex items-center gap-1 bg-card p-1.5 rounded-full border border-border self-start">
+          {COMMON_EMOJIS.map((emoji) => (
+            <button
+              key={emoji.label}
+              type="button"
+              onClick={() => handleEmojiClick(emoji.char)}
+              className="h-8 w-8 flex items-center justify-center text-lg hover:scale-125 hover:rotate-3 transition-transform focus:outline-none shrink-0 rounded-full hover:bg-accent"
+              title={`React with ${emoji.label}`}
+            >
+              {emoji.char}
+            </button>
+          ))}
         </div>
+
+        {/* Movie Player passed down from parent */}
       </div>
 
       {/* Side Reaction Feed List */}
-      <div className="flex flex-col h-[400px] border border-border/60 bg-card/30 backdrop-blur-sm rounded-2xl overflow-hidden">
+      <div className="flex flex-col h-[400px] md:w-80 shrink-0 border border-border/60 bg-card/30 backdrop-blur-sm rounded-2xl overflow-hidden">
         <div className="border-b border-border p-4 bg-muted/20">
           <h3 className="text-sm font-bold flex items-center gap-2">
             <Heart className="h-4 w-4 text-primary shrink-0" />
@@ -212,7 +119,6 @@ export function ReactionFeed({
           </h3>
         </div>
 
-        {/* Scrollable reactions */}
         <div
           ref={containerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
@@ -220,7 +126,7 @@ export function ReactionFeed({
           {reactions.length === 0 ? (
             <div className="h-full flex items-center justify-center text-center p-4">
               <p className="text-xs text-muted-foreground">
-                No reactions yet. Press emojis on the player to send live timestamps!
+                No reactions yet. Click emojis below the player to send live timestamps!
               </p>
             </div>
           ) : (
@@ -254,15 +160,6 @@ export function ReactionFeed({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Simple local Badge replacement if UI doesn't have it
-function Badge({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors", className)}>
-      {children}
     </div>
   );
 }

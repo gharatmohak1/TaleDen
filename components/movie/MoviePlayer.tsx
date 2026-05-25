@@ -7,6 +7,7 @@ interface VidkingPlayerProps {
   movieId: string;
   savedProgressSeconds?: number;
   title: string;
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
 }
 
 export function MoviePlayer({
@@ -14,6 +15,7 @@ export function MoviePlayer({
   movieId,
   savedProgressSeconds = 0,
   title,
+  onTimeUpdate,
 }: VidkingPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSavedRef = useRef<number>(0);
@@ -49,6 +51,10 @@ export function MoviePlayer({
 
       const { event: evtName, currentTime, duration } = parsed.data ?? {};
 
+      if (currentTime !== undefined && duration !== undefined) {
+        onTimeUpdate?.(currentTime, duration);
+      }
+
       if (
         (evtName === "pause" || evtName === "ended" || evtName === "seeked") &&
         currentTime !== undefined &&
@@ -65,7 +71,7 @@ export function MoviePlayer({
         }
       }
     },
-    [saveProgress]
+    [saveProgress, onTimeUpdate]
   );
 
   useEffect(() => {

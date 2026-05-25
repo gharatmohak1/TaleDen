@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Users, Sparkles, LogOut, ShieldCheck } from "lucide-react";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { ReactionFeed } from "@/components/watch-room/reaction-feed";
+import { WatchRoomPlayer } from "@/components/watch-room/watch-room-player";
 import { Button } from "@/components/ui/button";
 import { leaveWatchRoom, joinWatchRoom } from "@/actions/watch-rooms";
 
@@ -36,6 +36,7 @@ export default async function WatchRoomDetailPage({
       movie: {
         select: {
           id: true,
+          tmdbId: true,
           title: true,
           posterPath: true,
           backdropPath: true,
@@ -110,8 +111,6 @@ export default async function WatchRoomDetailPage({
     redirect("/watch-rooms");
   };
 
-  const movieRuntime = room.movie.runtime ?? 120; // default fallback
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8 space-y-6">
       {/* Header */}
@@ -138,15 +137,17 @@ export default async function WatchRoomDetailPage({
 
       {/* Main layout */}
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
-        {/* Movie/Reactions Feed */}
+        {/* Movie Player + Reactions Feed */}
         <div className="lg:col-span-3">
-          <ReactionFeed
+          <WatchRoomPlayer
+            tmdbId={room.movie.tmdbId}
+            movieId={room.movie.id}
+            movieTitle={room.movie.title}
             roomId={room.id}
             userId={session.user.id}
             userName={session.user.name ?? session.user.username ?? "Anonymous"}
             userImage={session.user.image}
             initialReactions={room.reactions}
-            movieRuntime={movieRuntime}
           />
         </div>
 
