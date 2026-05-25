@@ -1,21 +1,8 @@
-import Redis from "ioredis";
+import { Redis } from "@upstash/redis";
 
-const globalForRedis = globalThis as unknown as {
-  redis: Redis | undefined;
-};
-
-function createRedisClient(): Redis {
-  const url = process.env.REDIS_URL ?? "redis://localhost:6379";
-  return new Redis(url, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-  });
-}
-
-export const redis = globalForRedis.redis ?? createRedisClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForRedis.redis = redis;
-}
+export const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL ?? "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN ?? "",
+});
 
 export default redis;

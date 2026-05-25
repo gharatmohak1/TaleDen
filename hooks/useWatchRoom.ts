@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { getRoomReactions } from "@/actions/watch-rooms";
 
 export interface SocketReaction {
   id?: string;
@@ -11,39 +11,27 @@ export interface SocketReaction {
 }
 
 export function useWatchRoom(roomId: string, userId: string, userName: string, userImage?: string | null) {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [reactions, setReactions] = useState<SocketReaction[]>([]);
+  const lastIdRef = useRef<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    // Call the socket API route to ensure server-side setup has run
-    void fetch("/api/socket").catch((err) => {
-      console.error("Failed to ping socket initializer:", err);
-    });
-
-    const s = io({
-      path: "/api/socket",
-      autoConnect: true,
-    });
-
-    s.emit("join-room", roomId);
-
-    s.on("new-reaction", (reaction: SocketReaction) => {
-      setReactions((prev) => [...prev, reaction]);
-    });
-
-    Promise.resolve().then(() => {
-      setSocket(s);
-    });
-
-    return () => {
-      s.emit("leave-room", roomId);
-      s.disconnect();
-    };
+  const poll = useCallback(async () => {
+    const result = await getRoomReactions(roomId, lastIdRef.current);
+    if (result.length > 0) {
+      lastIdRef.current = result[result.length - 1].id ?? null;
+      setReactions((prev) => [...prev, ...result]);
+    }
   }, [roomId]);
 
+  useEffect(() => {
+    poll();
+    intervalRef.current = setInterval(poll, 3000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [poll]);
+
   const sendReaction = (emoji: string, timestamp: number) => {
-    if (!socket) return;
-    
     const reaction: SocketReaction = {
       emoji,
       timestamp,
@@ -51,9 +39,7 @@ export function useWatchRoom(roomId: string, userId: string, userName: string, u
       userName,
       userImage,
     };
-
-    // Broadcast reaction
-    socket.emit("reaction", { roomId, reaction });
+    setReactions((prev) => [...prev, reaction]);
   };
 
   return { reactions, setReactions, sendReaction };

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 // ─── ENUMS ──────────────────────────────────────────────────────────────────
@@ -169,7 +170,6 @@ model Review {
 
   user    User    @relation(fields: [userId], references: [id])
   movie   Movie   @relation(fields: [movieId], references: [id])
-  votes   Vote[]
 
   @@unique([userId, movieId])
 }
@@ -192,7 +192,6 @@ model Discussion {
   movie    Movie     @relation(fields: [movieId], references: [id])
   user     User      @relation(fields: [userId], references: [id])
   comments Comment[]
-  votes    Vote[]
 }
 
 model Comment {
@@ -207,9 +206,8 @@ model Comment {
 
   discussion Discussion @relation(fields: [discussionId], references: [id])
   user       User       @relation(fields: [userId], references: [id])
-  parent     Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  parent     Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   replies    Comment[]  @relation("CommentReplies")
-  votes      Vote[]
 }
 
 model Vote {
@@ -220,10 +218,7 @@ model Vote {
   value        Int
   createdAt    DateTime @default(now())
 
-  user         User       @relation(fields: [userId], references: [id])
-  review       Review?    @relation(fields: [targetId], references: [id])
-  discussion   Discussion? @relation(fields: [targetId], references: [id])
-  comment      Comment?   @relation(fields: [targetId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, targetType, targetId])
 }

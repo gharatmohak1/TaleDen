@@ -118,6 +118,39 @@ export async function leaveWatchRoom(roomId: string) {
   }
 }
 
+export async function getRoomReactions(
+  roomId: string,
+  afterId?: string | null,
+) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  try {
+    const reactions = await prisma.roomReaction.findMany({
+      where: {
+        roomId,
+        ...(afterId ? { id: { gt: afterId } } : {}),
+      },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+      include: {
+        user: { select: { name: true, image: true } },
+      },
+    });
+
+    return reactions.map((r) => ({
+      id: r.id,
+      emoji: r.emoji,
+      timestamp: r.timestamp,
+      userId: r.userId,
+      userName: r.user.name,
+      userImage: r.user.image,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function saveRoomReaction(
   roomId: string,
   emoji: string,

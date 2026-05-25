@@ -13,9 +13,7 @@ export default auth((req) => {
     pathname.startsWith("/api/recommendations") ||
     pathname.startsWith("/api/genre-score") ||
     pathname.startsWith("/api/taste-match") ||
-    pathname.startsWith("/api/tmdb-sync") ||
-    pathname.startsWith("/api/socket") ||
-    pathname.startsWith("/api/passport");
+    pathname.startsWith("/api/tmdb-sync");
 
   if (isPublicApi) return NextResponse.next();
 

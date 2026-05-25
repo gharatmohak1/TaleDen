@@ -226,8 +226,7 @@ export async function calculateTasteMatch(
     await redis.set(
       cacheKey(userAId, userBId),
       JSON.stringify(result),
-      "EX",
-      CACHE_TTL_SECONDS,
+      { ex: CACHE_TTL_SECONDS },
     );
   } catch {
     // Redis is optional — never block on cache failures
@@ -243,7 +242,7 @@ export async function getCachedTasteMatch(
   userBId: string,
 ): Promise<TasteMatchResult | null> {
   try {
-    const cached = await redis.get(cacheKey(userAId, userBId));
+    const cached = await redis.get<string>(cacheKey(userAId, userBId));
     if (cached) return JSON.parse(cached) as TasteMatchResult;
   } catch {
     // Redis miss or unavailable — fall through
