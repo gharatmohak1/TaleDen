@@ -120,7 +120,7 @@ export async function getRecommendations(
     let score = 0;
     const genres = parseGenres(movie.genres);
     genres.forEach((g) => {
-      score += (genreVector[g] ?? 0) * 0.01;
+      score += Math.min((genreVector[g] ?? 0) * 0.01, 30);
     });
     score += movie.trendScore * 0.1;
     if (movie.filmDna && Object.keys(moodFilter).length > 0) {
@@ -128,7 +128,7 @@ export async function getRecommendations(
     }
     return {
       ...movie,
-      recommendationScore: score,
+      recommendationScore: Math.min(Math.max(score, 0), 100),
       reason: buildReason(genres, profile.moodState, topGenres[0]),
     };
   });

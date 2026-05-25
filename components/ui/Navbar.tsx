@@ -99,45 +99,47 @@ export function Navbar() {
 
           <div className="flex items-center gap-2">
             {session && (
-              <Link
-                href="/notifications"
-                className="relative w-10 h-10 flex items-center justify-center
-                           rounded-full hover:bg-accent transition-colors
-                           active:scale-[0.97]"
-                aria-label="Notifications"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor"
-                     strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-              </Link>
-            )}
-
-            {session && (
-              <Link
-                href={profileHref}
-                className="hidden lg:flex items-center gap-2 px-2 py-1.5
-                           rounded-full hover:bg-accent transition-all duration-150"
-              >
-                {session.user.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt="Avatar"
-                    width={28}
-                    height={28}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-accent flex items-center
-                                  justify-center text-xs font-medium">
-                    {session.user.name?.[0]?.toUpperCase()}
-                  </div>
-                )}
-                <span className="text-sm max-w-[100px] truncate">
-                  {session.user.name}
-                </span>
-              </Link>
+              <>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="hidden lg:flex items-center gap-1.5 px-3 py-1.5
+                             rounded-full text-sm text-muted-foreground
+                             hover:text-destructive hover:bg-destructive/10
+                             transition-all duration-150 active:scale-[0.97]"
+                  aria-label="Sign out"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor"
+                       strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sign out
+                </button>
+                <Link
+                  href={profileHref}
+                  className="hidden lg:flex items-center gap-2 px-2 py-1.5
+                             rounded-full hover:bg-accent transition-all duration-150"
+                >
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt="Avatar"
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-accent flex items-center
+                                    justify-center text-xs font-medium">
+                      {session.user.name?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm max-w-[100px] truncate">
+                    {session.user.name}
+                  </span>
+                </Link>
+              </>
             )}
 
             <button

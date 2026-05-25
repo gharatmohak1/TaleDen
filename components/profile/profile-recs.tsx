@@ -69,7 +69,7 @@ export function ProfileRecs({ recommendations }: ProfileRecsProps) {
                   <Link href={`/movies/${movie.id}`}>{movie.title}</Link>
                 </CardTitle>
                 <span className="text-[10px] text-muted-foreground font-mono">
-                  {year ?? "N/A"} • Match: {Math.round(movie.recommendationScore * 10)}%
+                  {year ?? "N/A"} • Match: {Math.min(100, Math.round(movie.recommendationScore))}%
                 </span>
               </CardHeader>
               <CardContent className="p-3 pt-0">
