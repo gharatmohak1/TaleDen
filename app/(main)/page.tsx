@@ -9,7 +9,7 @@ import { RecommendationsPanel } from "@/components/recommendation/recommendation
 import prisma from "@/lib/prisma";
 import { getRecommendations } from "@/lib/recommendation";
 import { MoodState } from "@prisma/client";
-import { Sparkles, TrendingUp, Dna } from "lucide-react";
+import { Sparkles, TrendingUp, Dna, MessageSquare, Bell } from "lucide-react";
 import { TMDB_IMAGE_BASE } from "@/lib/tmdb";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,6 +43,26 @@ export default async function HomePage() {
         orderBy: { lastWatchedAt: "desc" },
         take: 6,
         include: { movie: { select: { id: true, title: true, posterPath: true } } },
+      })
+    : [];
+
+  // Fetch recent discussions across all movies
+  const recentDiscussions = await prisma.discussion.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      user: { select: { username: true } },
+      movie: { select: { id: true, title: true } },
+      _count: { select: { comments: true } },
+    },
+  });
+
+  // Fetch recent notifications for logged-in user
+  const recentNotifications = session?.user?.id
+    ? await prisma.notification.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
       })
     : [];
 
@@ -175,6 +195,70 @@ export default async function HomePage() {
             {trending.map((movie) => (
               <div key={movie.id} className="shrink-0 w-32 md:w-auto md:shrink">
                 <MovieCard movie={movie} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recentDiscussions.length > 0 && (
+        <section className="mt-8 md:mt-12">
+          <div className="mb-4 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <h2>Recent Discussions</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {recentDiscussions.map((d) => (
+              <Link
+                key={d.id}
+                href={`/movies/${d.movie.id}/discussions/${d.id}`}
+                className="rounded-xl border border-border bg-card p-4 transition-all duration-150 hover:shadow-[0_1px_8px_hsl(var(--foreground)/0.05)]"
+              >
+                <p className="text-xs text-muted-foreground truncate">
+                  in {d.movie.title}
+                </p>
+                <h3 className="mt-1 font-semibold leading-snug line-clamp-2">
+                  {d.title}
+                </h3>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <span>@{d.user.username}</span>
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" />
+                    {d._count.comments}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recentNotifications.length > 0 && (
+        <section className="mt-8 md:mt-12">
+          <div className="mb-4 flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            <h2>Notifications</h2>
+          </div>
+          <div className="space-y-2">
+            {recentNotifications.map((n) => (
+              <div
+                key={n.id}
+                className="rounded-xl border border-border bg-card p-4 transition-all duration-150"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className={`text-sm ${n.isRead ? "text-muted-foreground" : "font-semibold text-foreground"}`}>
+                    {n.title}
+                  </p>
+                  {!n.isRead && (
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                  {n.body}
+                </p>
+                <p className="mt-1.5 text-[10px] text-muted-foreground font-mono">
+                  {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </p>
               </div>
             ))}
           </div>

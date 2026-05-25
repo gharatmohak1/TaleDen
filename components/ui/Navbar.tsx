@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 const NAV_LINKS = [
   { href: "/",             label: "Home",         icon: "🏠" },
@@ -100,6 +101,7 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             {session && (
               <>
+                <NotificationBell />
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
                   className="hidden lg:flex items-center gap-1.5 px-3 py-1.5
